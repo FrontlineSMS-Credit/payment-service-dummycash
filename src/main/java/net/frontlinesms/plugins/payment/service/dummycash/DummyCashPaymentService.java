@@ -4,8 +4,12 @@ import java.math.BigDecimal;
 
 import org.creditsms.plugins.paymentview.data.domain.Client;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
+import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
+import org.creditsms.plugins.paymentview.data.repository.OutgoingPaymentDao;
 
 import net.frontlinesms.data.domain.PersistableSettings;
+import net.frontlinesms.plugins.payment.service.PaymentJob;
+import net.frontlinesms.plugins.payment.service.PaymentJobProcessor;
 import net.frontlinesms.plugins.payment.service.PaymentService;
 import net.frontlinesms.plugins.payment.service.PaymentServiceException;
 import net.frontlinesms.serviceconfig.ConfigurableService;
@@ -18,17 +22,23 @@ public class DummyCashPaymentService implements PaymentService {
 	/** Prefix attached to every property name. */
 	private static final String PROPERTY_PREFIX = "plugins.payment.dummycash.";
 
-	private static final String PROPERTY_USERNAME = PROPERTY_PREFIX + "username";
-	private static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
-	private static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
+	static final String PROPERTY_USERNAME = PROPERTY_PREFIX + "username";
+	static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
+	static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
+	static final String PROPERTY_OUTGOING_ENABLED = PROPERTY_PREFIX + "outgoing.enabled";
 
 	private PersistableSettings settings;
+
+	private DummyCashHttpJobber httpJobber;
+
+	private PaymentJobProcessor jobProcessor;
 
 	public StructuredProperties getPropertiesStructure() {
 		StructuredProperties defaultSettings = new StructuredProperties();
 		defaultSettings.put(PROPERTY_USERNAME, "Nathan");
 		defaultSettings.put(PROPERTY_PASSWORD, new PasswordString("secret"));
 		defaultSettings.put(PROPERTY_SERVER_URL, "http://localhost:8080/dummycash");
+		defaultSettings.put(PROPERTY_OUTGOING_ENABLED, true);
 		return defaultSettings;
 	}
 
@@ -44,10 +54,20 @@ public class DummyCashPaymentService implements PaymentService {
 		return PaymentService.class;
 	}
 
-	public void makePayment(Client client, OutgoingPayment outgoingPayment)
+	public void makePayment(final Client client, final OutgoingPayment outgoingPayment)
 			throws PaymentServiceException {
-		// TODO Auto-generated method stub
-
+		jobProcessor.queue(new PaymentJob() {
+			public void run() {
+				String response = httpJobber.get(getServerUrl() + "/send/",
+						"u", getUsername(),
+						"p", getPassword().getValue(),
+						"to", client.getPhoneNumber(),
+						"amount", outgoingPayment.getAmountPaid().toString());
+				if(response.equals("OK")) {
+					outgoingPayment.setStatus(Status.CONFIRMED);
+				}
+			}
+		});
 	}
 
 	public void checkBalance() throws PaymentServiceException {
@@ -61,17 +81,50 @@ public class DummyCashPaymentService implements PaymentService {
 	}
 
 	public void startService() throws PaymentServiceException {
-		// TODO Auto-generated method stub
-
+		this.jobProcessor = new PaymentJobProcessor(this);
+		this.jobProcessor.start();
 	}
 
 	public void stopService() {
-		// TODO Auto-generated method stub
+		this.jobProcessor.stop();
+	}
+	
+	private String getUsername() {
+		return getPropertyValue(PROPERTY_USERNAME, String.class);
+	}
 
+	private PasswordString getPassword() {
+		return getPropertyValue(PROPERTY_PASSWORD, PasswordString.class);
+	}
+	
+	private String getServerUrl() {
+		return getPropertyValue(PROPERTY_SERVER_URL, String.class);
 	}
 
 	public boolean isOutgoingPaymentEnabled() {
-		// TODO Auto-generated method stub
-		return false;
+		return getPropertyValue(PROPERTY_OUTGOING_ENABLED, Boolean.class);
+	}
+
+	public void setOutgoingPaymentEnabled(boolean outgoingEnabled) {
+		this.settings.set(PROPERTY_OUTGOING_ENABLED, outgoingEnabled);
+	}
+	
+	/**
+	 * @param key The key of the property
+	 * @param clazz The class of the property's value
+	 * @param <T> The class of the property's value
+	 * @return The property value, either the one stored on db (if any) or the default value.
+	 * FIXME must be a cleaner way to implement than this...!  e.g. settings.get(KEY, String.class)
+	 */
+	protected <T extends Object> T getPropertyValue(String key, Class<T> clazz) {
+		return PersistableSettings.getPropertyValue(getPropertiesStructure(), settings, key, clazz);
+	}
+
+	public void setHttpJobber(DummyCashHttpJobber httpJobber) {
+		this.httpJobber = httpJobber;
+	}
+
+	public void queueJob(WaitingJob waitingJob) {
+		jobProcessor.queue(waitingJob);
 	}
 }
