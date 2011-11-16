@@ -122,6 +122,10 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 	private void waitForBackgroundJob() {
 		WaitingJob.waitForEvent(s);
 	}
+
+	public void testIncomingPaymentProcessing() {
+		throw new IllegalStateException("Please implement this method.");
+	}
 }
 
 class WaitingJob implements PaymentJob {
