@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import org.creditsms.plugins.paymentview.data.domain.Client;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
-import org.creditsms.plugins.paymentview.data.repository.OutgoingPaymentDao;
 
 import net.frontlinesms.data.domain.PersistableSettings;
 import net.frontlinesms.junit.BaseTestCase;
@@ -33,6 +32,7 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		settings.set(DummyCashPaymentService.PROPERTY_PASSWORD, new PasswordString(TEST_PASSWORD));
 		settings.set(DummyCashPaymentService.PROPERTY_SERVER_URL, TEST_URL);
 		settings.set(DummyCashPaymentService.PROPERTY_OUTGOING_ENABLED, true);
+		settings.set(DummyCashPaymentService.PROPERTY_BALANCE, new BigDecimal("0"));
 		s.setSettings(settings);
 		
 		httpJobber = mock(DummyCashHttpJobber.class);
@@ -55,14 +55,13 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		when(dummyClient.getPhoneNumber()).thenReturn(destinationPhoneNumber);
 		
 		OutgoingPayment dummyOutgoingPayment = mock(OutgoingPayment.class);
+		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
 		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
-		
-		OutgoingPaymentDao dao = mock(OutgoingPaymentDao.class);
 		
 		when(httpJobber.get(anyString(), (String[]) anyVararg())).thenReturn("OK");
 
 		// when
-		s.makePayment(dummyClient, dummyOutgoingPayment);
+		s.makePayment(dummyOutgoingPayment);
 		waitForBackgroundJob();
 		
 		// then
@@ -74,13 +73,40 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		
 		verify(dummyOutgoingPayment).setStatus(Status.CONFIRMED);
 	}
-
-	public void checkBalance() throws PaymentServiceException {
-		throw new IllegalStateException("This test is not yet implemented.");
+	
+	public void testMakePaymentFailure() {
+		throw new IllegalStateException("Please implement this method.");
 	}
 
-	public void testGetBalanceAmount() {
-		throw new IllegalStateException("This test is not yet implemented.");
+	public void testBalance() throws PaymentServiceException {
+		// given
+		when(httpJobber.get(anyString(), (String[]) anyVararg())).thenReturn("0", "20500.20", "-399.99");
+
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("0", s.getBalanceAmount().toString());
+		
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("20500.20", s.getBalanceAmount().toString());
+		
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("-399.99", s.getBalanceAmount().toString());
+		
+		verify(httpJobber, times(3)).get(TEST_URL + "/balance/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD});
+	}
+	
+	public void testCheckBalanceFailure() {
+		throw new IllegalStateException("Please implement this method.");
 	}
 
 	public void testIsOutgoingPaymentEnabled() {

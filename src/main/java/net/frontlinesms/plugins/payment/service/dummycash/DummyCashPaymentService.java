@@ -2,10 +2,8 @@ package net.frontlinesms.plugins.payment.service.dummycash;
 
 import java.math.BigDecimal;
 
-import org.creditsms.plugins.paymentview.data.domain.Client;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
-import org.creditsms.plugins.paymentview.data.repository.OutgoingPaymentDao;
 
 import net.frontlinesms.data.domain.PersistableSettings;
 import net.frontlinesms.plugins.payment.service.PaymentJob;
@@ -26,6 +24,7 @@ public class DummyCashPaymentService implements PaymentService {
 	static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
 	static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
 	static final String PROPERTY_OUTGOING_ENABLED = PROPERTY_PREFIX + "outgoing.enabled";
+	static final String PROPERTY_BALANCE = PROPERTY_PREFIX + "balance";
 
 	private PersistableSettings settings;
 
@@ -39,6 +38,7 @@ public class DummyCashPaymentService implements PaymentService {
 		defaultSettings.put(PROPERTY_PASSWORD, new PasswordString("secret"));
 		defaultSettings.put(PROPERTY_SERVER_URL, "http://localhost:8080/dummycash");
 		defaultSettings.put(PROPERTY_OUTGOING_ENABLED, true);
+		defaultSettings.put(PROPERTY_BALANCE, new BigDecimal(0));
 		return defaultSettings;
 	}
 
@@ -54,30 +54,35 @@ public class DummyCashPaymentService implements PaymentService {
 		return PaymentService.class;
 	}
 
-	public void makePayment(final Client client, final OutgoingPayment outgoingPayment)
+	public void makePayment(final OutgoingPayment payment)
 			throws PaymentServiceException {
 		jobProcessor.queue(new PaymentJob() {
 			public void run() {
 				String response = httpJobber.get(getServerUrl() + "/send/",
 						"u", getUsername(),
 						"p", getPassword().getValue(),
-						"to", client.getPhoneNumber(),
-						"amount", outgoingPayment.getAmountPaid().toString());
+						"to", payment.getClient().getPhoneNumber(),
+						"amount", payment.getAmountPaid().toString());
 				if(response.equals("OK")) {
-					outgoingPayment.setStatus(Status.CONFIRMED);
+					payment.setStatus(Status.CONFIRMED);
 				}
 			}
 		});
 	}
 
 	public void checkBalance() throws PaymentServiceException {
-		// TODO Auto-generated method stub
-
+		jobProcessor.queue(new PaymentJob() {
+			public void run() {
+				String response = httpJobber.get(getServerUrl() + "/balance/",
+						"u", getUsername(),
+						"p", getPassword().getValue());
+				settings.set(PROPERTY_BALANCE, new BigDecimal(response));
+			}
+		});
 	}
 
 	public BigDecimal getBalanceAmount() {
-		// TODO Auto-generated method stub
-		return null;
+		return getPropertyValue(PROPERTY_BALANCE, BigDecimal.class);
 	}
 
 	public void startService() throws PaymentServiceException {
