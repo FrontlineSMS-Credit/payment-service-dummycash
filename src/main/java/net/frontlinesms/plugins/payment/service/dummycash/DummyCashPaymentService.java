@@ -16,11 +16,11 @@ import net.frontlinesms.serviceconfig.StructuredProperties;
 @ConfigurableServiceProperties(name="DummyCash", icon="/icons/dummycash.png")
 public class DummyCashPaymentService implements PaymentService {
 	/** Prefix attached to every property name. */
-	private static final String PROPERTY_PREFIX = "plugins.payment.service.dummycash.";
+	private static final String PROPERTY_PREFIX = "plugins.payment.dummycash.";
 
-	protected static final String PROPERTY_USERNAME = PROPERTY_PREFIX + "username";
-	protected static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
-	protected static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
+	private static final String PROPERTY_USERNAME = PROPERTY_PREFIX + "username";
+	private static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
+	private static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
 
 	private PersistableSettings settings;
 
@@ -74,5 +74,4 @@ public class DummyCashPaymentService implements PaymentService {
 		// TODO Auto-generated method stub
 		return false;
 	}
-
 }
