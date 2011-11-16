@@ -58,7 +58,7 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
 		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
 		
-		when(httpJobber.get(anyString(), (String[]) anyVararg())).thenReturn("OK");
+		when(httpJobber.get(eq(TEST_URL + "/send/"), (String[]) anyVararg())).thenReturn("OK");
 
 		// when
 		s.makePayment(dummyOutgoingPayment);
@@ -80,7 +80,7 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 
 	public void testBalance() throws PaymentServiceException {
 		// given
-		when(httpJobber.get(anyString(), (String[]) anyVararg())).thenReturn("0", "20500.20", "-399.99");
+		when(httpJobber.get(eq(TEST_URL + "/balance/"), (String[]) anyVararg())).thenReturn("0", "20500.20", "-399.99");
 
 		// when
 		s.checkBalance();
