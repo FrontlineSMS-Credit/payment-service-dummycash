@@ -74,11 +74,119 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		verify(dummyOutgoingPayment).setStatus(Status.CONFIRMED);
 	}
 	
-	public void testMakePaymentFailure() {
-		throw new IllegalStateException("Please implement this method.");
+	public void testMakePaymentFailure_errorUsernameOrPassword() throws Exception {
+		// given
+		String destinationPhoneNumber = "+23456789";
+		String paymentAmount = "123.45";
+		
+		Client dummyClient = mock(Client.class);
+		when(dummyClient.getPhoneNumber()).thenReturn(destinationPhoneNumber);
+		
+		OutgoingPayment dummyOutgoingPayment = mock(OutgoingPayment.class);
+		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
+		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
+		
+		when(httpJobber.get(eq(TEST_URL + "/send/"), (String[]) anyVararg())).thenReturn("ERROR: Username or password incorrect.");
+
+		// when
+		s.makePayment(dummyOutgoingPayment);
+		waitForBackgroundJob();
+		
+		// then
+		verify(httpJobber).get(TEST_URL + "/send/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD,
+				"to", destinationPhoneNumber,
+				"amount", paymentAmount});
+		
+		verify(dummyOutgoingPayment).setStatus(Status.ERROR);
+	}
+	
+	public void testMakePaymentFailure_errorCredit() throws Exception {
+		// given
+		String destinationPhoneNumber = "+23456789";
+		String paymentAmount = "123.45";
+		
+		Client dummyClient = mock(Client.class);
+		when(dummyClient.getPhoneNumber()).thenReturn(destinationPhoneNumber);
+		
+		OutgoingPayment dummyOutgoingPayment = mock(OutgoingPayment.class);
+		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
+		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
+		
+		when(httpJobber.get(eq(TEST_URL + "/send/"), (String[]) anyVararg())).thenReturn("ERROR: Not enough credit in account.");
+
+		// when
+		s.makePayment(dummyOutgoingPayment);
+		waitForBackgroundJob();
+		
+		// then
+		verify(httpJobber).get(TEST_URL + "/send/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD,
+				"to", destinationPhoneNumber,
+				"amount", paymentAmount});
+		
+		verify(dummyOutgoingPayment).setStatus(Status.ERROR);
+	}
+	
+	public void testMakePaymentFailure_badResponse() throws Exception {
+		// given
+		String destinationPhoneNumber = "+23456789";
+		String paymentAmount = "123.45";
+		
+		Client dummyClient = mock(Client.class);
+		when(dummyClient.getPhoneNumber()).thenReturn(destinationPhoneNumber);
+		
+		OutgoingPayment dummyOutgoingPayment = mock(OutgoingPayment.class);
+		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
+		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
+		
+		when(httpJobber.get(eq(TEST_URL + "/send/"), (String[]) anyVararg())).thenReturn("THISISNOTAPROPERRESPONSE");
+
+		// when
+		s.makePayment(dummyOutgoingPayment);
+		waitForBackgroundJob();
+		
+		// then
+		verify(httpJobber).get(TEST_URL + "/send/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD,
+				"to", destinationPhoneNumber,
+				"amount", paymentAmount});
+		
+		verify(dummyOutgoingPayment).setStatus(Status.ERROR);
+	}
+	
+	public void testMakePaymentFailure_serverUnavailable() throws Exception {
+		// given
+		String destinationPhoneNumber = "+23456789";
+		String paymentAmount = "123.45";
+		
+		Client dummyClient = mock(Client.class);
+		when(dummyClient.getPhoneNumber()).thenReturn(destinationPhoneNumber);
+		
+		OutgoingPayment dummyOutgoingPayment = mock(OutgoingPayment.class);
+		when(dummyOutgoingPayment.getClient()).thenReturn(dummyClient);
+		when(dummyOutgoingPayment.getAmountPaid()).thenReturn(new BigDecimal(paymentAmount));
+		
+		when(httpJobber.get(eq(TEST_URL + "/send/"), (String[]) anyVararg())).thenThrow(new DummyCashServerCommsException());
+
+		// when
+		s.makePayment(dummyOutgoingPayment);
+		waitForBackgroundJob();
+		
+		// then
+		verify(httpJobber).get(TEST_URL + "/send/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD,
+				"to", destinationPhoneNumber,
+				"amount", paymentAmount});
+		
+		verify(dummyOutgoingPayment).setStatus(Status.ERROR);
 	}
 
-	public void testBalance() throws PaymentServiceException {
+	public void testBalance() throws Exception {
 		// given
 		when(httpJobber.get(eq(TEST_URL + "/balance/"), (String[]) anyVararg())).thenReturn("0", "20500.20", "-399.99");
 

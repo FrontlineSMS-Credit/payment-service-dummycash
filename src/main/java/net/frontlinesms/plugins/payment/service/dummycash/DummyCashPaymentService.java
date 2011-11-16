@@ -58,13 +58,20 @@ public class DummyCashPaymentService implements PaymentService {
 			throws PaymentServiceException {
 		jobProcessor.queue(new PaymentJob() {
 			public void run() {
-				String response = httpJobber.get(getServerUrl() + "/send/",
-						"u", getUsername(),
-						"p", getPassword().getValue(),
-						"to", payment.getClient().getPhoneNumber(),
-						"amount", payment.getAmountPaid().toString());
-				if(response.equals("OK")) {
-					payment.setStatus(Status.CONFIRMED);
+				try {
+					String response = httpJobber.get(getServerUrl() + "/send/",
+							"u", getUsername(),
+							"p", getPassword().getValue(),
+							"to", payment.getClient().getPhoneNumber(),
+							"amount", payment.getAmountPaid().toString());
+					if(response.equals("OK")) {
+						payment.setStatus(Status.CONFIRMED);
+					} else {
+						payment.setStatus(Status.ERROR);
+					}
+				} catch(Exception ex) {
+					payment.setStatus(Status.ERROR);
+					// TODO log the exception
 				}
 			}
 		});
@@ -73,10 +80,14 @@ public class DummyCashPaymentService implements PaymentService {
 	public void checkBalance() throws PaymentServiceException {
 		jobProcessor.queue(new PaymentJob() {
 			public void run() {
-				String response = httpJobber.get(getServerUrl() + "/balance/",
-						"u", getUsername(),
-						"p", getPassword().getValue());
-				settings.set(PROPERTY_BALANCE, new BigDecimal(response));
+				try {
+					String response = httpJobber.get(getServerUrl() + "/balance/",
+							"u", getUsername(),
+							"p", getPassword().getValue());
+					settings.set(PROPERTY_BALANCE, new BigDecimal(response));
+				} catch(Exception ex) {
+					// TODO log the exception
+				}
 			}
 		});
 	}
