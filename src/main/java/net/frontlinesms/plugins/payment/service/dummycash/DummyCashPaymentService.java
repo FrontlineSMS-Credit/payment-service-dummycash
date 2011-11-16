@@ -10,29 +10,38 @@ import net.frontlinesms.plugins.payment.service.PaymentService;
 import net.frontlinesms.plugins.payment.service.PaymentServiceException;
 import net.frontlinesms.serviceconfig.ConfigurableService;
 import net.frontlinesms.serviceconfig.ConfigurableServiceProperties;
+import net.frontlinesms.serviceconfig.PasswordString;
 import net.frontlinesms.serviceconfig.StructuredProperties;
 
 @ConfigurableServiceProperties(name="DummyCash", icon="/icons/dummycash.png")
 public class DummyCashPaymentService implements PaymentService {
+	/** Prefix attached to every property name. */
+	private static final String PROPERTY_PREFIX = "plugins.payment.service.dummycash.";
+
+	protected static final String PROPERTY_USERNAME = PROPERTY_PREFIX + "username";
+	protected static final String PROPERTY_PASSWORD = PROPERTY_PREFIX + "password";
+	protected static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
+
+	private PersistableSettings settings;
 
 	public StructuredProperties getPropertiesStructure() {
-		// TODO Auto-generated method stub
-		return null;
+		StructuredProperties defaultSettings = new StructuredProperties();
+		defaultSettings.put(PROPERTY_USERNAME, "Nathan");
+		defaultSettings.put(PROPERTY_PASSWORD, new PasswordString("secret"));
+		defaultSettings.put(PROPERTY_SERVER_URL, "http://localhost:8080/dummycash");
+		return defaultSettings;
 	}
 
 	public PersistableSettings getSettings() {
-		// TODO Auto-generated method stub
-		return null;
+		return settings;
 	}
 
 	public void setSettings(PersistableSettings settings) {
-		// TODO Auto-generated method stub
-
+		this.settings = settings;
 	}
 
 	public Class<? extends ConfigurableService> getSuperType() {
-		// TODO Auto-generated method stub
-		return null;
+		return PaymentService.class;
 	}
 
 	public void makePayment(Client client, OutgoingPayment outgoingPayment)
@@ -57,11 +66,6 @@ public class DummyCashPaymentService implements PaymentService {
 	}
 
 	public void stopService() {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void initSettings(PersistableSettings settings) {
 		// TODO Auto-generated method stub
 
 	}

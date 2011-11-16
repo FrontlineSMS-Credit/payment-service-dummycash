@@ -8,5 +8,8 @@ What we did:
 # fill in POM details
 # add new service to dist pom so that it is included on classpath
 # annotate PaymentService class with @ConfigurableServiceProperties
+
+    @ConfigurableServiceProperties(name="${paymentServiceName}", icon="/icons/${paymentServiceName.toLowerCase()}.png")
+
 # create icon and place it at location specified in @ConfigurableServiceProperties annotation (`src/main/resources/icons/${serviceName}.png`)
 # implement methods in `${paymentServiceName}PaymentService`
