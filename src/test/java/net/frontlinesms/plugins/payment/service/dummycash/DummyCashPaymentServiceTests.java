@@ -3,14 +3,17 @@ package net.frontlinesms.plugins.payment.service.dummycash;
 import java.math.BigDecimal;
 
 import org.creditsms.plugins.paymentview.data.domain.Client;
+import org.creditsms.plugins.paymentview.data.domain.IncomingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
+import org.creditsms.plugins.paymentview.data.repository.IncomingPaymentDao;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import net.frontlinesms.data.domain.PersistableSettings;
 import net.frontlinesms.junit.BaseTestCase;
 import net.frontlinesms.plugins.payment.service.PaymentJob;
 import net.frontlinesms.plugins.payment.service.PaymentService;
-import net.frontlinesms.plugins.payment.service.PaymentServiceException;
 import net.frontlinesms.serviceconfig.PasswordString;
 
 import static org.mockito.Mockito.*;
@@ -213,8 +216,41 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 				"p", TEST_PASSWORD});
 	}
 	
-	public void testCheckBalanceFailure() {
-		throw new IllegalStateException("Please implement this method.");
+	public void testCheckBalanceFailure() throws Exception {
+		// given
+		when(httpJobber.get(eq(TEST_URL + "/balance/"), (String[]) anyVararg())).thenAnswer(new Answer<String>() {
+			private int counter;
+			public String answer(InvocationOnMock invocation) throws Throwable {
+				switch(++counter) {
+					case 1: return "12";
+					case 2: throw new DummyCashServerCommsException();
+					case 3: return "350.25";
+					default: throw new RuntimeException();
+				}
+			}
+		});
+
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("12", s.getBalanceAmount().toString());
+		
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("12", s.getBalanceAmount().toString());
+		
+		// when
+		s.checkBalance();
+		// then
+		waitForBackgroundJob();
+		assertEquals("350.25", s.getBalanceAmount().toString());
+		
+		verify(httpJobber, times(3)).get(TEST_URL + "/balance/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD});
 	}
 
 	public void testIsOutgoingPaymentEnabled() {
@@ -231,8 +267,22 @@ public class DummyCashPaymentServiceTests extends BaseTestCase {
 		WaitingJob.waitForEvent(s);
 	}
 
-	public void testIncomingPaymentProcessing() {
-		throw new IllegalStateException("Please implement this method.");
+	public void testIncomingPaymentProcessing() throws Exception {
+		// setup
+		when(httpJobber.get(eq(TEST_URL + "/incoming/"), (String[]) anyVararg())).
+				thenReturn("[ {\"amount\":\"400\", \"sender\":\"asdfghjk\", \"date\":\"2011-10-06 12:29:11 +0100\"}, {\"amount\":\"12\", \"sender\":\"0324567\", \"date\":\"2011-10-06 12:24:11 -0200\"} ]", "[]");
+		IncomingPaymentDao dao = mock(IncomingPaymentDao.class);
+		s.setIncomingDao(dao);
+		
+		// when
+		s.doCheckForIncomingPayments();
+		
+		// then
+		verify(httpJobber).get(TEST_URL + "/incoming/", new String[] {
+				"u", TEST_USERNAME,
+				"p", TEST_PASSWORD});
+		waitForBackgroundJob();
+		verify(dao, times(2)).saveIncomingPayment(any(IncomingPayment.class));
 	}
 }
 

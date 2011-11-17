@@ -1,9 +1,14 @@
 package net.frontlinesms.plugins.payment.service.dummycash;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
+import org.creditsms.plugins.paymentview.data.domain.IncomingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
+import org.creditsms.plugins.paymentview.data.repository.IncomingPaymentDao;
 
 import net.frontlinesms.data.domain.PersistableSettings;
 import net.frontlinesms.plugins.payment.service.PaymentJob;
@@ -14,6 +19,8 @@ import net.frontlinesms.serviceconfig.ConfigurableService;
 import net.frontlinesms.serviceconfig.ConfigurableServiceProperties;
 import net.frontlinesms.serviceconfig.PasswordString;
 import net.frontlinesms.serviceconfig.StructuredProperties;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 
 @ConfigurableServiceProperties(name="DummyCash", icon="/icons/dummycash.png")
 public class DummyCashPaymentService implements PaymentService {
@@ -31,6 +38,8 @@ public class DummyCashPaymentService implements PaymentService {
 	private DummyCashHttpJobber httpJobber;
 
 	private PaymentJobProcessor jobProcessor;
+
+	private IncomingPaymentDao incomingDao;
 
 	public StructuredProperties getPropertiesStructure() {
 		StructuredProperties defaultSettings = new StructuredProperties();
@@ -142,5 +151,36 @@ public class DummyCashPaymentService implements PaymentService {
 
 	public void queueJob(WaitingJob waitingJob) {
 		jobProcessor.queue(waitingJob);
+	}
+
+	void doCheckForIncomingPayments() throws DummyCashServerCommsException {
+		String response = httpJobber.get(getServerUrl() + "/incoming/",
+				"u", getUsername(),
+				"p", getPassword().getValue());
+		
+		JSONArray a = JSONArray.fromObject(response);
+		for(int i=0; i<a.size(); ++i) {
+			JSONObject o = a.getJSONObject(i);
+			try {
+				IncomingPayment p = new IncomingPayment();
+				p.setPaymentServiceSettings(this.getSettings());
+				p.setPaymentBy(o.getString("sender"));
+				p.setAmountPaid(new BigDecimal(o.getString("amount")));
+				p.setTimePaid(parseDate(o.getString("date")));
+
+				this.incomingDao.saveIncomingPayment(p);
+			} catch(Exception ex) {
+				// TODO log this
+				ex.printStackTrace();
+			}
+		}
+	}
+
+	private Date parseDate(String dateString) throws ParseException {
+		return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").parse(dateString);
+	}
+
+	public void setIncomingDao(IncomingPaymentDao dao) {
+		this.incomingDao = dao;
 	}
 }
