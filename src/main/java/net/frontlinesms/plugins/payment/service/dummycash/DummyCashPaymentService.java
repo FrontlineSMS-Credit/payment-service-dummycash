@@ -149,8 +149,8 @@ public class DummyCashPaymentService implements PaymentService {
 		this.httpJobber = httpJobber;
 	}
 
-	public void queueJob(WaitingJob waitingJob) {
-		jobProcessor.queue(waitingJob);
+	public void queueJob(PaymentJob job) {
+		jobProcessor.queue(job);
 	}
 
 	void doCheckForIncomingPayments() throws DummyCashServerCommsException {
