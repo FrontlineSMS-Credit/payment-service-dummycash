@@ -163,7 +163,7 @@ public class DummyCashPaymentService implements PaymentService {
 			JSONObject o = a.getJSONObject(i);
 			try {
 				IncomingPayment p = new IncomingPayment();
-				p.setPaymentServiceSettings(this.getSettings());
+				p.setServiceSettings(this.getSettings());
 				p.setPaymentBy(o.getString("sender"));
 				p.setAmountPaid(new BigDecimal(o.getString("amount")));
 				p.setTimePaid(parseDate(o.getString("date")));
