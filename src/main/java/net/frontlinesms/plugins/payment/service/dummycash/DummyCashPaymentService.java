@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.creditsms.plugins.paymentview.PaymentViewPluginController;
 import org.creditsms.plugins.paymentview.data.domain.IncomingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment;
 import org.creditsms.plugins.paymentview.data.domain.OutgoingPayment.Status;
@@ -40,6 +41,8 @@ public class DummyCashPaymentService implements PaymentService {
 	private PaymentJobProcessor jobProcessor;
 
 	private IncomingPaymentDao incomingDao;
+	
+	public void init(PaymentViewPluginController pluginController) throws PaymentServiceException {}
 
 	public StructuredProperties getPropertiesStructure() {
 		StructuredProperties defaultSettings = new StructuredProperties();
