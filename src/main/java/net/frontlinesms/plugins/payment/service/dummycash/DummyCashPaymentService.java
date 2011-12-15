@@ -16,10 +16,12 @@ import net.frontlinesms.plugins.payment.service.PaymentJob;
 import net.frontlinesms.plugins.payment.service.PaymentJobProcessor;
 import net.frontlinesms.plugins.payment.service.PaymentService;
 import net.frontlinesms.plugins.payment.service.PaymentServiceException;
+import net.frontlinesms.plugins.payment.service.ui.PaymentServiceUiActionHandler;
 import net.frontlinesms.serviceconfig.ConfigurableService;
 import net.frontlinesms.serviceconfig.ConfigurableServiceProperties;
 import net.frontlinesms.serviceconfig.PasswordString;
 import net.frontlinesms.serviceconfig.StructuredProperties;
+import net.frontlinesms.ui.UiGeneratorController;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -185,5 +187,9 @@ public class DummyCashPaymentService implements PaymentService {
 
 	public void setIncomingDao(IncomingPaymentDao dao) {
 		this.incomingDao = dao;
+	}
+	
+	public PaymentServiceUiActionHandler getServiceActionUiHandler(UiGeneratorController ui) {
+		return null;
 	}
 }
