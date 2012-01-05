@@ -35,6 +35,7 @@ public class DummyCashPaymentService implements PaymentService {
 	static final String PROPERTY_SERVER_URL = PROPERTY_PREFIX + "server.url";
 	static final String PROPERTY_OUTGOING_ENABLED = PROPERTY_PREFIX + "outgoing.enabled";
 	static final String PROPERTY_BALANCE = PROPERTY_PREFIX + "balance";
+	static final String PROPERTY_BALANCE_ENABLED = PROPERTY_PREFIX + "balance.enabled";
 
 	private PersistableSettings settings;
 
@@ -52,6 +53,7 @@ public class DummyCashPaymentService implements PaymentService {
 		defaultSettings.put(PROPERTY_PASSWORD, new PasswordString("secret"));
 		defaultSettings.put(PROPERTY_SERVER_URL, "http://localhost:8080/dummycash");
 		defaultSettings.put(PROPERTY_OUTGOING_ENABLED, true);
+		defaultSettings.put(PROPERTY_BALANCE_ENABLED, false);
 		defaultSettings.put(PROPERTY_BALANCE, new BigDecimal(0));
 		return defaultSettings;
 	}
@@ -137,6 +139,14 @@ public class DummyCashPaymentService implements PaymentService {
 
 	public void setOutgoingPaymentEnabled(boolean outgoingEnabled) {
 		this.settings.set(PROPERTY_OUTGOING_ENABLED, outgoingEnabled);
+	}
+	
+	public boolean isCheckBalanceEnabled() {
+		return getPropertyValue(PROPERTY_BALANCE_ENABLED, Boolean.class);
+	}
+
+	public void setCheckBalanceEnabled(boolean checkBalanceEnabled) {
+		this.settings.set(PROPERTY_BALANCE_ENABLED, checkBalanceEnabled);
 	}
 	
 	/**
