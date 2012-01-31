@@ -65,6 +65,10 @@ public class DummyCashPaymentService implements PaymentService {
 	public void setSettings(PersistableSettings settings) {
 		this.settings = settings;
 	}
+	
+	public boolean isRestartRequired(PersistableSettings newSettings) {
+		return true;
+	}
 
 	public Class<? extends ConfigurableService> getSuperType() {
 		return PaymentService.class;
